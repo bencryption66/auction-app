@@ -3,7 +3,7 @@
 :queues:
   - default
 
-:schedule:
+:scheduler:
   my_scheduled_job:
     cron: "0 * * * *" # Runs every hour
     class: "ImportPremiumNamesJob"
