@@ -1,0 +1,18 @@
+# Omakase Ruby styling for Rails
+inherit_gem: { rubocop-rails-omakase: rubocop.yml }
+
+AllCops:
+  Exclude:
+    - 'script/**/*'
+
+# Overwrite or add rules to create your own house style
+#
+# # Use `[a, [b, c]]` not `[ a, [ b, c ] ]`
+# Layout/SpaceInsideArrayLiteralBrackets:
+#   Enabled: false
+Layout/SpaceInsideArrayLiteralBrackets:
+  EnforcedStyle: no_space
+
+  # Prefer single-quoted strings when you don't need string interpolation or special symbols
+Style/StringLiterals:
+  EnforcedStyle: single_quotes

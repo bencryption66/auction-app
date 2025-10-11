@@ -1,0 +1,73 @@
+<div class="container py-4 py-md-5">
+
+  <!-- Header -->
+  <div class="mb-3 mb-md-4">
+    <h1 class="h3 page-title mb-1">Premium ENS Domains</h1>
+    <p class="page-subtitle mb-0">Explore recently expired names with descending premium. Filter by club and search freely.</p>
+  </div>
+
+  <!-- Filters + Search -->
+  <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-3">
+    <!-- Chips -->
+    <div class="filters d-flex flex-wrap align-items-center chip-group" role="group" aria-label="Category filters" data-controller="category-filter">
+      <a href="<%= assets_path %>" class="btn btn-outline-light me-2">Show All</a>
+
+      <% @category_counts.each do |category_id, count| %>
+        <% category = Category.find(category_id) %>
+        <input class="btn-check" id="chip-<%= category.slug %>" type="checkbox" autocomplete="off" data-category-id="<%= category.id %>" data-action="change->category-filter#toggle">
+        <label class="btn btn-outline-light" for="chip-<%= category.slug %>"><%= category.name %> (<%= count %>)</label>
+      <% end %>
+    </div>
+
+    <!-- Free text search -->
+    <div class="search-wrap position-relative w-100 w-lg-auto" style="max-width:420px;">
+      <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M11 19a8 8 0 1 1 5.292-13.708A8 8 0 0 1 11 19Zm10 2-5.4-5.4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <%= form_with url: assets_path, method: :get, local: false, class: "d-flex" do |form| %>
+        <%= form.text_field :search, value: @search_query, class: "form-control", placeholder: "Search names…", aria: { label: "Search names" } %>
+        <%= form.hidden_field :categories, value: @selected_categories.join(",") if @selected_categories.any? %>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Table Card -->
+  <div class="card shadow-soft">
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Expiry (UTC)</th>
+            <th scope="col">Time Until Premium Ends</th>
+            <th scope="col">Current Premium</th>
+            <th scope="col" class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Sample rows. Use the data attributes to hook your JS later. -->
+           <% @assets.each do |asset| %>
+            <tr data-name="<%= asset.name %>" data-expiry="<%= asset.expires_at %>" data-premium-ends="<%= asset.premium_ends_at %>">
+              <td class="name-cell"><%= asset.name %></td>
+              <td class="expiry-cell"><%= asset.expires_at.strftime("%Y-%m-%d") %></td>
+              <td class="until-cell"><%= distance_of_time_in_words(Time.current, asset.premium_ends_at, include_seconds: false, highest_measure_only: true) %> left</td>
+              <td class="premium-cell"><%= number_to_currency(asset.current_premium_usd, unit: "$", precision: 2) %></td>
+              <td class="text-end">
+                <a class="btn btn-register btn-sm" href="https://app.ens.domains/<%= asset.name %>/register" target="_blank" rel="noopener">Register on ENS</a>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="p-3 d-flex align-items-center justify-content-between">
+      <div class="text-muted small">
+        Showing <%= @assets.offset_value + 1 %> to <%= [@assets.offset_value + @assets.limit_value, @assets.total_count].min %> of <%= @assets.total_count %> entries
+      </div>
+      <%= paginate @assets %>
+    </div>
+  </div>
+
+</div>

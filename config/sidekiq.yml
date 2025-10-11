@@ -1,0 +1,9 @@
+# config/sidekiq.yml
+:concurrency: 5
+:queues:
+  - default
+
+:schedule:
+  my_scheduled_job:
+    cron: "0 * * * *" # Runs every hour
+    class: "ImportPremiumNamesJob"

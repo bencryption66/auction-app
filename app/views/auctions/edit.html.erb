@@ -1,0 +1,12 @@
+<% content_for :title, "Editing auction" %>
+
+<h1>Editing auction</h1>
+
+<%= render "form", auction: @auction %>
+
+<br>
+
+<div>
+  <%= link_to "Show this auction", @auction %> |
+  <%= link_to "Back to auctions", auctions_path %>
+</div>

@@ -1,0 +1,10 @@
+<p style="color: green"><%= notice %></p>
+
+<%= render @auction %>
+
+<div>
+  <%= link_to "Edit this auction", edit_auction_path(@auction) %> |
+  <%= link_to "Back to auctions", auctions_path %>
+
+  <%= button_to "Destroy this auction", @auction, method: :delete %>
+</div>

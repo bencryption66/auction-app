@@ -1,0 +1,9 @@
+//= link_tree ../images
+//= link_tree ../../javascript/controllers
+//= link_directory ../stylesheets .css
+//= link application.js
+//= link chart.js.js
+//= link @kurkle--color.js
+//= link_tree ../../javascript .js
+//= link_tree ../../../vendor/javascript .js
+//= link web3-wallets.js

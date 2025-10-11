@@ -1,0 +1,79 @@
+/*
+ *= require_self
+ *= require_tree .
+ */
+@import "bootstrap";
+
+:root{
+  --ens-accent: #2563eb; /* blue-600-ish */
+  --ens-accent-100:#dbeafe;
+  --ens-muted:#6b7280; /* gray-500-ish */
+}
+
+/* Page chrome */
+body{ background:#f8fafc; }
+.page-title{ letter-spacing:.1px; }
+.page-subtitle{ color:var(--ens-muted); }
+
+/* Filter chips (multi-select buttons) */
+.filters .btn{
+  border-radius:9999px;
+  padding:.35rem .8rem;
+  --bs-btn-color:#0f172a;
+  --bs-btn-border-color:#cbd5e1;
+  --bs-btn-hover-bg:#f1f5f9;
+  --bs-btn-hover-border-color:#cbd5e1;
+  --bs-btn-active-bg:var(--ens-accent);
+  --bs-btn-active-border-color:var(--ens-accent);
+  --bs-btn-active-color:#fff;
+  background:#fff;
+}
+.filters .btn:focus{ box-shadow:0 0 0 .15rem rgba(37,99,235,.2); }
+
+.filters .clear-filters{
+  color:var(--ens-accent);
+  text-decoration:none;
+  font-weight:500;
+}
+.filters .clear-filters:hover{ text-decoration:underline; }
+
+/* Search input */
+.search-wrap .form-control{
+  border-radius:9999px;
+  padding-left:2.6rem; /* room for icon */
+  background:#fff;
+}
+.search-wrap .search-icon{
+  position:absolute; left:.85rem; top:50%; transform:translateY(-50%);
+  pointer-events:none; color:#94a3b8;
+}
+
+/* Table */
+.card{ border:1px solid #e2e8f0; box-shadow:0 1px 2px rgba(15,23,42,.04); }
+.table thead th{ color:#475569; font-weight:600; white-space:nowrap; }
+.table tbody td{ vertical-align:middle; }
+.table .name-cell{ font-variant-numeric:tabular-nums; font-weight:600; }
+.table .expiry-cell, .table .until-cell{ white-space:nowrap; }
+.premium-cell{ font-variant-numeric:tabular-nums; font-weight:600; }
+.btn-register{
+  --bs-btn-bg:var(--ens-accent);
+  --bs-btn-border-color:var(--ens-accent);
+  --bs-btn-hover-bg:#1d4ed8;
+  --bs-btn-hover-border-color:#1d4ed8;
+  --bs-btn-color:#fff;
+  border-radius:9999px;
+  padding:.35rem .9rem;
+}
+
+/* Pagination spacing mirrors the mock */
+.ens-pagination .page-link{
+  border-radius:.5rem;
+  color:#0f172a;
+}
+.ens-pagination .page-item.active .page-link{
+  background:var(--ens-accent); border-color:var(--ens-accent);
+}
+
+/* Utilities */
+.chip-group{ gap:.5rem; }
+.shadow-soft{ box-shadow:0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04); }

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for(:title) || "Premium ENS" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <%# Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!) %>
+    <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+
+    <%# Includes all stylesheet files in app/assets/stylesheets %>
+    <%= stylesheet_link_tag :application, "data-turbo-track": "reload" %>
+    <%= javascript_include_tag "application", "data-turbo-track": "reload" %>
+  </head>
+
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm" data-controller="wallet-connect">
+      <div class="container">
+        <!-- Logo -->
+        <a class="navbar-brand" href="/">
+          <img src="/icon.png" alt="Logo" height="40">
+        </a>
+  
+        <!-- Navigation Links -->
+        <div class="navbar-nav" data-wallet-connect-target="nav">
+          <%= link_to "Premium ENS", assets_path, class: "nav-link" %>
+          <!-- Dynamic wallet link will be added here -->
+        </div>
+
+        <!-- Connect Wallet Button -->
+        <div class="d-flex">
+          <button class="btn btn-primary" id="connect-wallet-button" 
+                  
+                  data-action="click->wallet-connect#connectWallet" 
+                  data-wallet-connect-target="connectButton">
+            Connect Wallet
+          </button>
+        </div>
+      </div>
+    </nav>
+  
+    <%= yield %>
+  </body>
+</html>
