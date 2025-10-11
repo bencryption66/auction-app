@@ -45,7 +45,7 @@ gem 'dotenv-rails'
 gem 'httparty'
 gem 'kaminari'
 gem 'sassc-rails'
-gem 'sidekiq'
+gem 'sidekiq', '~> 6.5'
 gem 'sidekiq-scheduler'
 
 
