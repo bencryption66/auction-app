@@ -4,6 +4,7 @@
   - default
 
 :scheduler:
-  my_scheduled_job:
-    cron: "0 * * * *" # Runs every hour
-    class: "ImportPremiumNamesJob"
+  schedule:
+    import_premium_names_job:
+      cron: "0 * * * *" # Runs every hour
+      class: "ImportPremiumNamesJob"
