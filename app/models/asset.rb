@@ -28,4 +28,8 @@ class Asset < ApplicationRecord
   def premium_ends_at
     expires_at + 90.days + 21.days
   end
+
+  def token_id
+    GetTokenId.new(contract_address: collection.contract_address, name: name).call
+  end
 end

@@ -1,10 +1,265 @@
-<p style="color: green"><%= notice %></p>
+<% 
+  start_time = Time.at(@auction.start_time.to_i).utc
+  end_time = start_time + @auction.duration_days.to_i.days
+  is_expired = Time.current > end_time
+  time_remaining = end_time - Time.current
+%>
 
-<%= render @auction %>
+<div class="container py-4" 
+     data-controller="auction-buy auction-claim auction-price" 
+     data-auction-price-auction-id-value="<%= @auction.id %>"
+     data-auction-price-end-time-value="<%= end_time.iso8601 %>">       <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><%= link_to "Auctions", auctions_path %></li>
+      <li class="breadcrumb-item active" aria-current="page"><%= @auction.domain_name %></li>
+    </ol>
+  </nav>
 
-<div>
-  <%= link_to "Edit this auction", edit_auction_path(@auction) %> |
-  <%= link_to "Back to auctions", auctions_path %>
+  <div class="row g-4">
+    <!-- Left Column - Avatar -->
+    <div class="col-lg-6">
+      <div class="card shadow-soft h-100">
+        <div class="card-body text-center p-4">
+          <div class="avatar-container mb-4">
+            <% avatar_url = Ens::Avatar.call(nft_address: @auction.nft_address, token_id: @auction.token_id) %>
+            <% if avatar_url.present? %>
+              <img src="<%= avatar_url %>" 
+                   alt="<%= @auction.domain_name %> avatar" 
+                   class="ens-avatar rounded-3 shadow"
+                   onerror="this.src='https://via.placeholder.com/300x300/6366f1/ffffff?text=<%= @auction.domain_name.first(2).upcase %>'"
+                   loading="lazy">
+            <% else %>
+              <img src="https://via.placeholder.com/300x300/6366f1/ffffff?text=<%= @auction.domain_name.first(2).upcase %>" 
+                   alt="<%= @auction.domain_name %> avatar" 
+                   class="ens-avatar rounded-3 shadow"
+                   loading="lazy">
+            <% end %>
+          </div>
+          <h1 class="h3 fw-bold text-primary mb-2"><%= @auction.domain_name %></h1>
+          <p class="text-muted mb-0">ENS Domain</p>
+        </div>
+      </div>
+    </div>
 
-  <%= button_to "Destroy this auction", @auction, method: :delete %>
+    <!-- Right Column - Auction Details -->
+    <div class="col-lg-6">
+      <div class="card shadow-soft h-100">
+        <div class="card-body p-4">
+          <!-- Current Price -->
+          <div class="price-section mb-4">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <label class="form-label fw-semibold text-muted mb-0">Current Price</label>
+              <% unless @auction.settled? || @auction.expired? %>
+                <span class="badge bg-success">Live Auction</span>
+              <% end %>
+            </div>
+            <div class="current-price-display p-3 bg-light rounded-3 border">
+              <div data-auction-price-target="currentPrice" data-auction-id="<%= @auction.id %>">
+                <% if @auction.settled? %>
+                  <div class="h3 mb-1 text-success fw-bold">
+                    <%= number_with_precision(@auction.sale_price_eth.to_f / 1e18, precision: 4) %> ETH
+                  </div>
+                  <small class="text-muted">Final Sale Price</small>
+                <% elsif @auction.expired? %>
+                  <div class="h3 mb-1 text-warning fw-bold">Expired</div>
+                  <small class="text-muted">Auction has ended</small>
+                <% else %>
+                  <div class="h3 mb-1 fw-bold">
+                    <% current_price = @auction.current_price_usd %>
+                    <% if current_price %>
+                      $<%= number_with_precision(current_price, precision: 2) %>
+                    <% else %>
+                      Loading...
+                    <% end %>
+                  </div>
+                  <small class="text-muted">Price decreases over time</small>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+          <!-- Auction Info Grid -->
+          <div class="row g-3 mb-4">
+            <div class="col-6">
+              <div class="info-card p-3 bg-light rounded-3 border">
+                <div class="fw-semibold text-muted small">Starting Price</div>
+                <div class="fw-bold">$<%= number_with_precision(@auction.start_price_usd.to_f / 1e18, precision: 2) %></div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="info-card p-3 bg-light rounded-3 border">
+                <div class="fw-semibold text-muted small">Duration</div>
+                <div class="fw-bold"><%= @auction.duration_days %> days</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="info-card p-3 bg-light rounded-3 border">
+                <div class="fw-semibold text-muted small">Started</div>
+                <div class="fw-bold">
+                  <%= start_time.strftime("%b %d, %Y") %>
+                  <small class="d-block text-muted"><%= start_time.strftime("%H:%M UTC") %></small>
+                </div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="info-card p-3 bg-light rounded-3 border">
+                <div class="fw-semibold text-muted small">
+                  <% if is_expired %>Ended<% else %>Ends<% end %>
+                </div>
+                <div class="fw-bold">
+                  <%= end_time.strftime("%b %d, %Y") %>
+                  <small class="d-block text-muted"><%= end_time.strftime("%H:%M UTC") %></small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Time Remaining -->
+          <% unless @auction.settled? || is_expired %>
+            <div class="time-remaining mb-4 p-3 bg-warning bg-opacity-10 rounded-3 border border-warning border-opacity-25">
+              <div class="fw-semibold text-warning-emphasis small">Time Remaining</div>
+              <div class="fw-bold text-warning-emphasis" 
+                  data-auction-price-target="countdown">
+                <% if time_remaining > 0 %>
+                  <%= pluralize(time_remaining.to_i / 1.day, 'day') %>,
+                  <%= pluralize((time_remaining.to_i % 1.day) / 1.hour, 'hour') %>,
+                  <%= pluralize((time_remaining.to_i % 1.hour) / 1.minute, 'minute') %>
+                <% else %>
+                  Expired
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <!-- Seller Info -->
+          <div class="seller-info mb-4 p-3 bg-light rounded-3 border">
+            <div class="fw-semibold text-muted small mb-1">Seller</div>
+            <div class="d-flex align-items-center">
+              <code class="bg-white px-2 py-1 rounded text-primary small">
+                <%= @auction.seller[0..5] %>....<%= @auction.seller[-4..-1] %>
+              </code>
+              <button class="btn btn-sm btn-outline-secondary ms-2" 
+                      onclick="navigator.clipboard.writeText('<%= @auction.seller %>')"
+                      title="Copy full address">
+                <i class="bi bi-copy"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="action-buttons d-grid gap-2">
+            <% if @auction.settled? %>
+              <div class="alert alert-success mb-0">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>Auction Completed</strong> - This domain has been sold.
+              </div>
+            <% elsif is_expired %>
+              <!-- Show claim button only to the seller -->
+              <button class="btn btn-outline-danger btn-lg" 
+                      data-show-to-wallet="<%= @auction.seller %>"
+                      data-auction-claim-target="claimButton"
+                      data-action="click->auction-claim#claimBack"
+                      data-nft-address="<%= @auction.nft_address %>"
+                      data-token-id="<%= @auction.token_id %>"
+                      style="display: none;">
+                <i class="fas fa-undo me-2"></i>
+                Claim Back NFT
+              </button>
+            <% else %>
+              <!-- Show buy button to any connected wallet (except seller) -->
+              <button class="btn btn-success btn-lg" 
+                      data-show-to-wallet="any"
+                      data-auction-buy-target="buyButton"
+                      data-action="click->auction-buy#buy"
+                      data-contract-address="<%= @auction.contract_address %>"
+                      data-nft-address="<%= @auction.nft_address %>"
+                      data-token-id="<%= @auction.token_id %>"
+                      data-auction-id="<%= @auction.id %>"
+                      data-seller="<%= @auction.seller %>">
+                <i class="fas fa-shopping-cart me-2"></i>
+                Buy Now
+              </button>
+
+              <!-- Show connect notice when no wallet is connected -->
+              <div class="alert alert-info mb-0" 
+                  id="connect-notice"
+                  data-show-to-wallet="none">
+                <i class="fas fa-wallet me-2"></i>
+                Connect your wallet to participate in this auction.
+              </div>
+            <% end %>
+          </div>
+
+          <!-- Contract Info (Collapsible) -->
+          <div class="mt-4">
+            <button class="btn btn-link p-0 text-decoration-none" 
+                    type="button" 
+                    data-bs-toggle="collapse" 
+                    data-bs-target="#contractInfo">
+              <small class="text-muted">
+                <i class="fas fa-info-circle me-1"></i>
+                Contract Information
+                <i class="fas fa-chevron-down ms-1"></i>
+              </small>
+            </button>
+            <div class="collapse mt-2" id="contractInfo">
+              <div class="card card-body bg-light">
+                <div class="row g-2 small">
+                  <div class="col-12">
+                    <strong>Contract:</strong>
+                    <code class="ms-2"><%= @auction.contract_address %></code>
+                  </div>
+                  <div class="col-12">
+                    <strong>NFT Contract:</strong>
+                    <code class="ms-2"><%= @auction.nft_address %></code>
+                  </div>
+                  <div class="col-12">
+                    <strong>Token ID:</strong>
+                    <code class="ms-2"><%= @auction.token_id %></code>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+
+<style>
+.ens-avatar {
+  width: 300px;
+  height: 300px;
+  object-fit: cover;
+  border: 3px solid #e9ecef;
+}
+
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+}
+
+.info-card {
+  transition: transform 0.2s ease;
+}
+
+.info-card:hover {
+  transform: translateY(-2px);
+}
+
+@media (max-width: 991.98px) {
+  .ens-avatar {
+    width: 250px;
+    height: 250px;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .ens-avatar {
+    width: 200px;
+  height: 200px;
+  }
+}
+</style>
+

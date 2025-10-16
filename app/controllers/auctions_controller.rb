@@ -1,70 +1,83 @@
 class AuctionsController < ApplicationController
-  before_action :set_auction, only: %i[ show edit update destroy ]
+  include ActionView::Helpers::NumberHelper
 
-  # GET /auctions or /auctions.json
-  def index
-    @auctions = Auction.all
-  end
+  before_action :set_auction, only: [:show, :current_price, :blockchain_price]
 
-  # GET /auctions/1 or /auctions/1.json
-  def show
-  end
-
-  # GET /auctions/new
-  def new
-    @auction = Auction.new
-  end
-
-  # GET /auctions/1/edit
-  def edit
-  end
-
-  # POST /auctions or /auctions.json
   def create
     @auction = Auction.new(auction_params)
 
-    respond_to do |format|
-      if @auction.save
-        format.html { redirect_to @auction, notice: "Auction was successfully created." }
-        format.json { render :show, status: :created, location: @auction }
-      else
-        format.html { render :new, status: :unprocessable_entity }
-        format.json { render json: @auction.errors, status: :unprocessable_entity }
-      end
+    if @auction.save
+      render json: { status: 'success', auction: @auction }
+    else
+      render json: { status: 'error', errors: @auction.errors }, status: :unprocessable_entity
     end
   end
 
-  # PATCH/PUT /auctions/1 or /auctions/1.json
-  def update
-    respond_to do |format|
-      if @auction.update(auction_params)
-        format.html { redirect_to @auction, notice: "Auction was successfully updated.", status: :see_other }
-        format.json { render :show, status: :ok, location: @auction }
-      else
-        format.html { render :edit, status: :unprocessable_entity }
-        format.json { render json: @auction.errors, status: :unprocessable_entity }
-      end
+  def check
+    @auction = Auction.not_expired.find_by(
+      nft_address: params[:nft_address],
+      token_id: params[:token_id]
+    )
+
+    if @auction
+      render json: { exists: true, auction: @auction }
+    else
+      render json: { exists: false, auction: nil }
     end
   end
 
-  # DELETE /auctions/1 or /auctions/1.json
-  def destroy
-    @auction.destroy!
-
-    respond_to do |format|
-      format.html { redirect_to auctions_path, notice: "Auction was successfully destroyed.", status: :see_other }
-      format.json { head :no_content }
+  def current_price
+    if @auction.settled?
+      price_text = "#{number_with_precision(@auction.sale_price_eth.to_f / 1e18, precision: 4)} ETH"
+      status = "sold"
+    elsif @auction.expired?
+      price_text = "Expired"
+      status = "expired"
+    else
+      current_price = @auction.current_price_usd
+      price_text = current_price ? "$#{number_with_precision(current_price, precision: 2)}" : "Loading..."
+      status = "active"
     end
+
+    render json: {
+      price: price_text,
+      status: status,
+      expired: @auction.expired?,
+      settled: @auction.settled?
+    }
+  end
+
+  def blockchain_price
+    result = @auction.current_price_view
+    render json: result
+  end
+
+  def index
+    @auctions = Auction.includes(:asset).active.order(created_at: :desc)
+  end
+
+  def show
+    @auction.update_auction_info! unless @auction.settled?
   end
 
   private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_auction
-      @auction = Auction.find(params.expect(:id))
-    end
 
-    # Only allow a list of trusted parameters through.
-    def auction_params
-      params.expect(auction: [ :asset_id, :creator, :started_at, :ends_at ])
-    end
+  def set_auction
+    @auction = Auction.find(params[:id])
+  end
+
+  def auction_asset
+    collection = Collection.find_by(contract_address: params[:auction][:nft_address])
+    return nil unless collection
+
+    Asset.find_or_create_by(name: params[:auction][:domain_name], collection: collection)
+  end
+
+  def auction_params
+    params.require(:auction).permit(
+      :nft_address, :token_id, :domain_name, :seller,
+      :start_price_usd, :start_time, :duration_days, :fee_bps,
+      :settled, :buyer, :sale_price_eth, :token_standard, :contract_address
+    ).merge(asset: auction_asset)
+  end
 end

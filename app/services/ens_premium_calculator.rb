@@ -35,12 +35,21 @@ class EnsPremiumCalculator
     707_106_781_186_547_584
   ].freeze
 
-  def initialize(start_premium: 100_000_000_000, total_days: 21)
+  def initialize(start_premium: 100_000_000, total_days: 21)
     raise ArgumentError, "start_premium must be Integer" unless start_premium.is_a?(Integer)
     raise ArgumentError, "total_days must be >= 0" unless total_days.is_a?(Integer) && total_days >= 0
 
-    @start_premium = start_premium
-    @end_value     = start_premium >> total_days
+    @duration    = total_days * 24 * 60 * 60 # convert to seconds
+    @start_premium = start_premium * 1_000_000_000
+    @end_value     = 0
+  end
+
+  def current_premium_from_time_remaining(time_remaining)
+    proportional_time_remaining = ((PREMIUM_PERIOD / @duration.to_f) * time_remaining).ceil
+    puts "proportional_time_remaining: #{proportional_time_remaining}"
+    expiry_time = (Time.now.to_i + proportional_time_remaining) - (PREMIUM_PERIOD + GRACE_PERIOD)
+    puts "expiry_time: #{expiry_time}"
+    current_premium(expiry_time)
   end
 
   # expiry_time: Time or Integer (unix seconds) of the ENS name's expiry (NOT including grace period)
@@ -54,7 +63,7 @@ class EnsPremiumCalculator
     elapsed = now - exp
     premium = decayed_premium(@start_premium, elapsed)
     result = premium >= @end_value ? (premium - @end_value) : 0
-    result / 1000.0
+    result / 1_000_000_000.0
   end
 
   # Optional: convert attoUSD -> wei using a Chainlink-like ETH/USD price with 8 decimals (e.g., $3500 = 3500_00000000)

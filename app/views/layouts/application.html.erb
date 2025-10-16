@@ -17,6 +17,7 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag :application, "data-turbo-track": "reload" %>
     <%= javascript_include_tag "application", "data-turbo-track": "reload" %>
@@ -32,6 +33,7 @@
   
         <!-- Navigation Links -->
         <div class="navbar-nav" data-wallet-connect-target="nav">
+          <%= link_to "Auctions", auctions_path, class: "nav-link" %>
           <%= link_to "Premium ENS", assets_path, class: "nav-link" %>
           <!-- Dynamic wallet link will be added here -->
         </div>

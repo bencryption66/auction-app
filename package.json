@@ -10,6 +10,7 @@
     "@web3-onboard/injected-wallets": "^2.11.3",
     "bootstrap": "^5.3.8",
     "esbuild": "^0.25.10",
-    "ethers": "5.7.1"
+    "ethers": "5.7.1",
+    "web3": "^4.16.0"
   }
 }

@@ -1,0 +1,8 @@
+module Ethereum
+  class Chain
+    RPC_URL = 'https://mainnet.infura.io/v3/14f4ffab5b0f412996d742f8ff791207'.freeze
+    ENS_WRAPPER_ADDRESS = '0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401'.freeze
+    ENS_CONTRACT_ADDRESS = '0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85'.freeze
+    AUCTION_CONTRACT_ADDRESS = '0x918B512FE14568A63Fa1bD57b7DF5c6ea6A1Df5B'.freeze
+  end
+end

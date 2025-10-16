@@ -41,7 +41,9 @@ gem "thruster", require: false
 # gem "image_processing", "~> 1.2"
 
 gem 'bootstrap'
+gem 'digest-keccak'
 gem 'dotenv-rails'
+gem 'eth', '~> 0.5'
 gem 'httparty'
 gem 'kaminari'
 gem 'sassc-rails'

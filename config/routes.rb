@@ -1,7 +1,15 @@
 require 'sidekiq/web'
 
 Rails.application.routes.draw do
-  resources :auctions
+  resources :auctions do
+    member do
+      get :current_price
+      get :blockchain_price
+    end
+    collection do
+      get :check
+    end
+  end
   resources :assets
   resources :accounts do
     resources :assets, only: [:index]

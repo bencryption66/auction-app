@@ -12,3 +12,4 @@ pin 'chart.js', to: 'https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.min.
 pin '@web3-onboard/core', to: 'https://cdn.jsdelivr.net/npm/@web3-onboard/core@2.24.1/dist/index.min.js'
 pin '@web3-onboard/injected-wallets', to: 'https://cdn.jsdelivr.net/npm/@web3-onboard/injected-wallets@2.11.3/dist/index.min.js'
 pin 'ethers', to: 'https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.esm.min.js'
+pin 'web3', to: 'https://cdn.jsdelivr.net/npm/web3@4.16.0/dist/web3.min.js'
