@@ -47,7 +47,7 @@ gem 'eth', '~> 0.5'
 gem 'httparty'
 gem 'kaminari'
 gem 'sassc-rails'
-gem 'sidekiq', '~> 6.5'
+gem 'sidekiq', '~> 8.0'
 gem 'sidekiq-scheduler'
 
 
