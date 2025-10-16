@@ -103,7 +103,8 @@
                           data-nft-address="<%= auction.nft_address %>"
                           data-token-id="<%= auction.token_id %>"
                           data-contract-address="<%= auction.contract_address %>"
-                          style="display: none;">
+                          data-show-to-wallet="<%= auction.seller %>"
+                          data-auction-id="<%= auction.id %>">
                     Claim Back
                   </button>
                 <% else %>
@@ -114,6 +115,8 @@
                             data-nft-address="<%= auction.nft_address %>"
                             data-token-id="<%= auction.token_id %>"
                             data-contract-address="<%= auction.contract_address %>"
+                            data-auction-id="<%= auction.id %>"
+                            data-show-to-wallet="any"
                             data-seller="<%= auction.seller %>">
                       Buy Now
                     </button>
