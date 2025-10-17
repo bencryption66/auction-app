@@ -17,7 +17,7 @@ module EnsGraph
     end
 
     def expires_after
-      return assets_max_expiry if assets_max_expiry.positive?
+      # return assets_max_expiry if assets_max_expiry.positive?
 
       (Time.current - 90.days - 21.days).utc.to_i
     end
