@@ -5,7 +5,6 @@ export default class extends Controller {
 
   connect() {
     console.log("AuctionClaimController connected");
-    this.contractAddress = "0x918B512FE14568A63Fa1bD57b7DF5c6ea6A1Df5B";
     this.checkWalletConnection();
   }
 
@@ -53,8 +52,20 @@ export default class extends Controller {
     event.preventDefault();
     
     const button = event.currentTarget;
+    const contractAddress = button.dataset.contractAddress;
     const nftAddress = button.dataset.nftAddress;
     const tokenId = button.dataset.tokenId;
+    
+    // Validate required data
+    if (!contractAddress) {
+      alert("Contract address not found");
+      return;
+    }
+    
+    if (!nftAddress || !tokenId) {
+      alert("NFT address or token ID not found");
+      return;
+    }
     
     try {
       // Get wallet connection
@@ -79,7 +90,7 @@ export default class extends Controller {
 
       this.updateButtonState(button, "Claiming...", true);
 
-      await this.executeClaimBack(provider, nftAddress, tokenId);
+      await this.executeClaimBack(provider, contractAddress, nftAddress, tokenId);
 
       this.updateButtonState(button, "Claimed!", false);
       
@@ -95,8 +106,10 @@ export default class extends Controller {
     }
   }
 
-  async executeClaimBack(provider, nftAddress, tokenId) {
+  async executeClaimBack(provider, contractAddress, nftAddress, tokenId) {
     const web3 = new (await import('web3')).default(provider);
+    
+    console.log("Using contract address:", contractAddress);
     
     const auctionContract = new web3.eth.Contract([{
       "inputs": [
@@ -107,11 +120,16 @@ export default class extends Controller {
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
-    }], this.contractAddress);
+    }], contractAddress);
 
     const accounts = await web3.eth.getAccounts();
     
-    console.log("Claiming back NFT:", { nftAddress, tokenId });
+    console.log("Claiming back NFT:", { 
+      contractAddress, 
+      nftAddress, 
+      tokenId,
+      from: accounts[0]
+    });
     
     return new Promise((resolve, reject) => {
       auctionContract.methods.claimBack(nftAddress, tokenId)

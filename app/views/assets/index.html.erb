@@ -1,4 +1,4 @@
-<div class="container py-4 py-md-5">
+<div class="container py-4 py-md-5" data-controller="ens-registration">
 
   <!-- Header -->
   <div class="mb-3 mb-md-4">
@@ -45,21 +45,56 @@
           </tr>
         </thead>
         <tbody>
-          <!-- Sample rows. Use the data attributes to hook your JS later. -->
-           <% @assets.each do |asset| %>
-            <tr data-name="<%= asset.name %>" data-expiry="<%= asset.expires_at %>" data-premium-ends="<%= asset.premium_ends_at %>">
-              <td class="name-cell"><%= asset.name %></td>
-              <td class="expiry-cell"><%= asset.expires_at.strftime("%Y-%m-%d") %></td>
-              <td class="until-cell"><%= distance_of_time_in_words(Time.current, asset.premium_ends_at, include_seconds: false, highest_measure_only: true) %> left</td>
-              <td class="premium-cell"><%= number_to_currency(asset.current_premium_usd, unit: "$", precision: 2) %></td>
+          <% @assets.each do |asset| %>
+            <tr data-name="<%= asset.name %>" 
+                data-expiry="<%= asset.expires_at %>" 
+                data-premium-ends="<%= asset.premium_ends_at %>">
+              <td class="name-cell">
+                <strong><%= asset.name %></strong>
+                <% if asset.categories.any? %>
+                  <div class="mt-1">
+                    <% asset.categories.each do |category| %>
+                      <span class="badge bg-light text-dark small"><%= category.name %></span>
+                    <% end %>
+                  </div>
+                <% end %>
+              </td>
+              <td class="expiry-cell">
+                <%= asset.expires_at.strftime("%Y-%m-%d") %>
+              </td>
+              <td class="until-cell">
+                <%= distance_of_time_in_words(Time.current, asset.premium_ends_at, include_seconds: false, highest_measure_only: true) %> left
+              </td>
+              <td class="premium-cell">
+                <%= number_to_currency(asset.current_premium_usd, unit: "$", precision: 2) %>
+              </td>
               <td class="text-end">
-                <a class="btn btn-register btn-sm" href="https://app.ens.domains/<%= asset.name %>/register" target="_blank" rel="noopener">Register on ENS</a>
+                <!-- ENS Direct Registration -->
+                <button class="btn btn-primary btn-sm me-2" 
+                        data-ens-register-target="registerButton"
+                        data-action="click->ens-registration#openModal"
+                        data-name="<%= asset.name_without_suffix %>"
+                        data-premium="<%= asset.current_premium_usd %>"
+                        title="Register directly on our platform">
+                  💎 Register Here
+                </button>
+                
+                <!-- Fallback ENS Link -->
+                <!-- <a class="btn btn-outline-secondary btn-sm" 
+                   href="https://app.ens.domains/<%= asset.name %>/register" 
+                   target="_blank" 
+                   rel="noopener"
+                   title="Register on ENS official app">
+                  Register on ENS
+                </a> -->
               </td>
             </tr>
           <% end %>
         </tbody>
       </table>
     </div>
+
+    
 
     <!-- Pagination -->
     <div class="p-3 d-flex align-items-center justify-content-between">
@@ -70,4 +105,140 @@
     </div>
   </div>
 
+  <div class="modal fade" 
+       id="registrationModal" 
+       tabindex="-1" 
+       data-ens-registration-target="modal"
+       data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-ens-registration-target="modalTitle">Register ENS Name</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" data-ens-registration-target="modalBody">
+          
+          <!-- Registration Form -->
+          <div class="registration-form" data-ens-registration-target="registrationForm">
+            <div class="mb-4">
+              <h4 class="mb-3">Registration Details</h4>
+              
+              <!-- Name Field -->
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Name</label>
+                <div class="input-group">
+                  <input type="text" 
+                         class="form-control form-control-lg" 
+                         data-ens-registration-target="nameInput"
+                         readonly>
+                  <span class="input-group-text">.eth</span>
+                </div>
+              </div>
+
+              <!-- Duration Selection -->
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Duration</label>
+                  <input type="number" 
+                         class="form-control" 
+                         data-ens-registration-target="durationInput"
+                         value="1" 
+                         min="1" 
+                         max="100"
+                         data-action="input->ens-registration#updateCost">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Unit</label>
+                  <select class="form-select" 
+                          data-ens-registration-target="durationTypeSelect"
+                          data-action="change->ens-registration#updateCost">
+                    <option value="years">Years</option>
+                    <option value="months">Months</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Premium Display -->
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Current Premium</label>
+                <input type="text" 
+                       class="form-control" 
+                       data-ens-registration-target="premiumInput"
+                       readonly>
+              </div>
+
+              <!-- Cost Breakdown -->
+              <div class="card bg-light mb-4" data-ens-registration-target="costCard">
+                <div class="card-body">
+                  <h6 class="card-title mb-3">Cost Breakdown</h6>
+                  <div class="row mb-2">
+                    <div class="col-6">Base Cost:</div>
+                    <div class="col-6 text-end" data-ens-registration-target="baseCost">Calculating...</div>
+                  </div>
+                  <div class="row mb-2">
+                    <div class="col-6">Premium:</div>
+                    <div class="col-6 text-end" data-ens-registration-target="premiumCost">$0.00</div>
+                  </div>
+                  <hr>
+                  <div class="row fw-bold">
+                    <div class="col-6">Total:</div>
+                    <div class="col-6 text-end" data-ens-registration-target="totalCost">Calculating...</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex justify-content-between">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" 
+                      class="btn btn-primary btn-lg" 
+                      data-ens-registration-target="startRegistrationButton"
+                      data-action="click->ens-registration#startRegistration"
+                      disabled>
+                Start Registration
+              </button>
+            </div>
+          </div>
+
+          <!-- Progress View (hidden initially) -->
+          <div class="registration-progress d-none" data-ens-registration-target="progressView">
+            <!-- Step Indicator -->
+            <div class="d-flex align-items-center mb-4">
+              <div class="spinner-border spinner-border-sm me-3 text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <div class="flex-grow-1">
+                <div class="fw-semibold" data-ens-registration-target="stepTitle">Step 1: Creating Commitment</div>
+                <div class="text-muted small" data-ens-registration-target="stepDescription">This prevents front-running attacks</div>
+              </div>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="progress mb-4" style="height: 8px;">
+              <div class="progress-bar bg-primary" 
+                   role="progressbar" 
+                   style="width: 0%" 
+                   data-ens-registration-target="progressBar"
+                   aria-valuenow="0" 
+                   aria-valuemin="0" 
+                   aria-valuemax="100"></div>
+            </div>
+            
+            <!-- Status Messages -->
+            <div class="alert alert-info border-0 bg-light" data-ens-registration-target="statusAlert">
+              <div class="d-flex">
+                <i class="fas fa-info-circle text-info me-2 mt-1"></i>
+                <div>
+                  <strong>Registration in progress...</strong> This process requires 2 transactions with a 60-second wait between them for security.
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+

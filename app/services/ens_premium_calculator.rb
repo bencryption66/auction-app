@@ -41,7 +41,7 @@ class EnsPremiumCalculator
 
     @duration    = total_days * 24 * 60 * 60 # convert to seconds
     @start_premium = start_premium * 1_000_000_000
-    @end_value     = 0
+    @end_value     = @start_premium >> total_days
   end
 
   def current_premium_from_time_remaining(time_remaining)

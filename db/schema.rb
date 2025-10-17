@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_16_000406) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_17_123627) do
   create_table "asset_categories", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "asset_id", null: false
     t.bigint "category_id", null: false
@@ -71,6 +71,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_16_000406) do
     t.string "slug"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "users", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.string "ethereum_address"
+    t.string "name"
+    t.string "email"
+    t.string "avatar_url"
+    t.datetime "last_sign_in_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["ethereum_address"], name: "index_users_on_ethereum_address", unique: true
   end
 
   add_foreign_key "asset_categories", "assets"

@@ -1,6 +1,6 @@
 class Asset < ApplicationRecord
   belongs_to :collection
-  has_many :asset_categories
+  has_many :asset_categories, dependent: :destroy
   has_many :categories, through: :asset_categories
   has_many :auctions, dependent: :destroy
 

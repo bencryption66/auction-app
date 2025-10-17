@@ -77,3 +77,58 @@ body{ background:#f8fafc; }
 /* Utilities */
 .chip-group{ gap:.5rem; }
 .shadow-soft{ box-shadow:0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04); }
+
+.btn-register {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-register:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+  color: white;
+}
+
+.btn-register:disabled {
+  background: #6c757d;
+  transform: none;
+  box-shadow: none;
+}
+
+.registration-progress {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.modal-content {
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.progress {
+  border-radius: 10px;
+  background-color: #e9ecef;
+}
+
+.progress-bar {
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+.spinner-border-sm {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.alert-info {
+  background-color: #f8f9fa !important;
+  border: 1px solid #dee2e6 !important;
+}

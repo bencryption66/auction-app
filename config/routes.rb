@@ -1,6 +1,10 @@
 require 'sidekiq/web'
 
 Rails.application.routes.draw do
+  post '/auth/verify_signature', to: 'auth#verify_signature'
+  delete '/auth/sign_out', to: 'auth#sign_out'
+  get '/auth/current_user', to: 'auth#current_user_info'
+
   resources :auctions do
     member do
       get :current_price

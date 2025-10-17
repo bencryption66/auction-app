@@ -39,12 +39,15 @@
         </div>
 
         <!-- Connect Wallet Button -->
-        <div class="d-flex">
-          <button class="btn btn-primary" id="connect-wallet-button" 
-                  
-                  data-action="click->wallet-connect#connectWallet" 
-                  data-wallet-connect-target="connectButton">
-            Connect Wallet
+        <div class="navbar-nav ms-auto" data-wallet-connect-target="nav">         
+          <button class="btn btn-primary" 
+                  data-wallet-connect-target="connectButton"
+                  data-action="click->wallet-connect#connectWallet">
+            <% if current_user %>
+              <%= current_user.display_name %>
+            <% else %>
+              Connect Wallet
+            <% end %>
           </button>
         </div>
       </div>

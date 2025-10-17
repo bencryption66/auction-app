@@ -5,136 +5,264 @@ import Onboard from '@web3-onboard/core';
 export default class extends Controller {
   static targets = ["connectButton", "nav"];
 
-  connectButtonTargetConnected() {
+  async connect() {
     console.log("WalletConnectController connected");
-    this.initializeOnboard();
-    const state = this.onboard.state.select();
-    const { unsubscribe } = state.subscribe((update) => console.log('state update: ', update));
+    this.isAuthenticating = false;
+    this.authenticatedAddress = null;
+    await this.initializeOnboard();
+    await this.checkExistingAuth();
   }
 
   async initializeOnboard() {
     console.log("Initializing Onboard.js...");
-    const MAINNET_RPC_URL = 'https://mainnet.infura.io/v3/14f4ffab5b0f412996d742f8ff791207';
-
     this.onboard = Onboard(onboardOptions);
-    console.log("Onboard.js initialized:", this.onboard);
-
-    const state = this.onboard.state.select()
+    
+    const state = this.onboard.state.select();
     const { unsubscribe } = state.subscribe(this.handleStateUpdate.bind(this));
   }
 
   async handleStateUpdate(state) {
     console.log("Onboard state updated:", state);
+    
     if (state.wallets.length > 0) {
       const wallet = state.wallets[0];
-      this.updateUIWithWalletInfo(wallet);
-      this.showWalletSpecificElements(wallet.accounts[0].address);
+      const address = wallet.accounts[0].address;
+      
+      // Check if user is already authenticated for this address
+      const isAlreadyAuthenticated = await this.checkIfAuthenticated(address);
+      
+      if (isAlreadyAuthenticated) {
+        console.log("User already authenticated, skipping sign message");
+        this.authenticatedAddress = address.toLowerCase();
+        this.showWalletSpecificElements(address);
+        // Update UI without re-authenticating
+        const response = await fetch('/auth/current_user');
+        const result = await response.json();
+        if (result.authenticated) {
+          this.updateUIWithUser(result.user);
+        }
+      } else if (!this.isAuthenticating && 
+                 this.authenticatedAddress !== address.toLowerCase()) {
+        console.log("New wallet detected, authenticating...");
+        await this.authenticateWithBackend(address, wallet.provider);
+      } else {
+        console.log("Already authenticated or authentication in progress");
+      }
     } else {
-      this.connectButtonTarget.innerHTML = "Connect Wallet";
-      this.connectButtonTarget.classList.remove("btn-secondary");
-      this.connectButtonTarget.classList.add("btn-primary");
-      this.hideAllWalletSpecificElements();
+      this.handleDisconnect();
     }
   }
 
-  async checkForPreviouslyConnectedWallet() {
-    const previouslyConnectedWallets = this.onboard.state.get().wallets;
-    console.log("Previously connected wallets:", previouslyConnectedWallets);
+  async checkIfAuthenticated(address) {
+    try {
+      const response = await fetch('/auth/current_user');
+      const result = await response.json();
+      
+      return result.authenticated && 
+             result.user.ethereum_address.toLowerCase() === address.toLowerCase();
+    } catch (error) {
+      console.error('Error checking authentication:', error);
+      return false;
+    }
+  }
 
-    return previouslyConnectedWallets;
+  async authenticateWithBackend(address, provider) {
+    if (this.isAuthenticating) {
+      console.log("Authentication already in progress, skipping...");
+      return;
+    }
+
+    this.isAuthenticating = true;
+    
+    try {
+      console.log("Starting authentication for:", address);
+      
+      const message = `Sign this message to authenticate with the auction app.\n\nAddress: ${address}\nTime: ${new Date().toISOString()}`;
+      const signature = await this.signMessage(provider, address, message);
+      
+      const response = await fetch('/auth/verify_signature', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+        },
+        body: JSON.stringify({
+          address: address,
+          signature: signature,
+          message: message
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        this.authenticatedAddress = address.toLowerCase();
+        this.updateUIWithUser(result.user);
+        this.showWalletSpecificElements(address);
+        console.log("Authentication successful for:", address);
+      } else {
+        console.error('Authentication failed:', result.error);
+        this.handleDisconnect();
+      }
+    } catch (error) {
+      console.error('Authentication error:', error);
+      this.handleDisconnect();
+    } finally {
+      this.isAuthenticating = false;
+    }
+  }
+
+  async signMessage(provider, address, message) {
+    console.log("Signing message for address:", address);
+    
+    try {
+      const signature = await provider.request({
+        method: 'personal_sign',
+        params: [message, address],
+      });
+      
+      console.log("Signature successful");
+      return signature;
+      
+    } catch (error) {
+      console.error("Signing failed:", error);
+      throw new Error(`Signing failed: ${error.message}`);
+    }
+  }
+
+  async checkExistingAuth() {
+    try {
+      const response = await fetch('/auth/current_user');
+      const result = await response.json();
+      
+      if (result.authenticated) {
+        console.log("User already authenticated:", result.user.ethereum_address);
+        this.authenticatedAddress = result.user.ethereum_address.toLowerCase();
+        
+        // Check if the authenticated address matches connected wallet
+        const wallets = this.onboard.state.get().wallets;
+        if (wallets.length > 0) {
+          const connectedAddress = wallets[0].accounts[0].address;
+          if (connectedAddress.toLowerCase() === result.user.ethereum_address.toLowerCase()) {
+            this.updateUIWithUser(result.user);
+            this.showWalletSpecificElements(connectedAddress);
+            return;
+          } else {
+            console.log("Connected wallet doesn't match authenticated user, signing out");
+            await this.signOut();
+          }
+        } else {
+          // User is authenticated but no wallet connected - show authenticated state
+          this.updateUIWithUser(result.user);
+        }
+      } else {
+        console.log("No existing authentication found");
+      }
+    } catch (error) {
+      console.error('Error checking existing auth:', error);
+    }
   }
 
   async connectWallet() {
     console.log("Connect button clicked...");
-    const wallets = await this.checkForPreviouslyConnectedWallet();
+    const wallets = this.onboard.state.get().wallets;
 
     if (wallets.length === 0) {
       console.log("No previously connected wallets. Prompting user to connect...");
       const connectedWallets = await this.onboard.connectWallet();
       console.log("Connected wallets:", connectedWallets);
-
-      if (connectedWallets.length > 0) {
-        this.updateUIWithWalletInfo(connectedWallets[0]);
-        this.showWalletSpecificElements(connectedWallets[0].accounts[0].address);
-      } else {
-        console.log("No wallet connected.");
-      }
     } else {
-      console.log("Using previously connected wallet.");
-      this.updateUIWithWalletInfo(wallets[0]);
-      this.showWalletSpecificElements(wallets[0].accounts[0].address);
+      console.log("Wallet already connected.");
     }
   }
 
-  updateUIWithWalletInfo(wallet) {
-    const primaryAddress = wallet.accounts[0].address;
-    this.connectButtonTarget.innerHTML = primaryAddress;
+  async signOut() {
+    try {
+      await fetch('/auth/sign_out', {
+        method: 'DELETE',
+        headers: {
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+        }
+      });
+      
+      const wallets = this.onboard.state.get().wallets;
+      if (wallets.length > 0) {
+        await this.onboard.disconnectWallet({ label: wallets[0].label });
+      }
+      
+      this.handleDisconnect();
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+  }
+
+  updateUIWithUser(user) {
+    this.connectButtonTarget.innerHTML = user.display_name;
     this.connectButtonTarget.classList.remove("btn-primary");
     this.connectButtonTarget.classList.add("btn-secondary");
-
-    this.addWalletNavLink(primaryAddress);
+    this.connectButtonTarget.onclick = () => this.signOut();
+    this.addUserNavLinks(user);
   }
 
-  addWalletNavLink(address) {
-    const nav = this.navTarget;
-    const existingLink = nav.querySelector("#wallet-assets-link");
+  handleDisconnect() {
+    this.connectButtonTarget.innerHTML = "Connect Wallet";
+    this.connectButtonTarget.classList.remove("btn-secondary");
+    this.connectButtonTarget.classList.add("btn-primary");
+    this.connectButtonTarget.onclick = () => this.connectWallet();
+    
+    this.isAuthenticating = false;
+    this.authenticatedAddress = null;
+    
+    this.removeUserNavLinks();
+    this.hideAllWalletSpecificElements();
+  }
 
-    if (!existingLink) {
-      const link = document.createElement("a");
-      link.id = "wallet-assets-link";
-      link.href = `/accounts/${address}/assets`;
-      link.className = "nav-link";
-      link.textContent = "My Names";
-      nav.appendChild(link);
+  addUserNavLinks(user) {
+    const nav = this.navTarget;
+    this.removeUserNavLinks();
+    
+    const myNamesLink = document.createElement("a");
+    myNamesLink.id = "wallet-assets-link";
+    myNamesLink.href = `/accounts/${user.ethereum_address}/assets`;
+    myNamesLink.className = "nav-link";
+    myNamesLink.textContent = "My Names";
+    nav.appendChild(myNamesLink);
+  }
+
+  removeUserNavLinks() {
+    const existingLink = document.querySelector("#wallet-assets-link");
+    if (existingLink) {
+      existingLink.remove();
     }
   }
 
-  // New methods for showing/hiding wallet-specific elements
   showWalletSpecificElements(walletAddress) {
     const normalizedAddress = walletAddress.toLowerCase();
-    
-    // Find all elements with data-show-to-wallet attribute
     const walletElements = document.querySelectorAll('[data-show-to-wallet]');
     
     walletElements.forEach(element => {
       const targetAddress = element.dataset.showToWallet.toLowerCase();
       
-      if (targetAddress === normalizedAddress) {
-        // Show element for matching wallet
+      if (targetAddress === normalizedAddress || targetAddress === 'any') {
         element.style.display = element.dataset.originalDisplay || 'block';
-        console.log(`Showing element for wallet ${walletAddress}:`, element);
-      } else {
-        // Hide element for non-matching wallet
-        if (!element.dataset.originalDisplay) {
-          element.dataset.originalDisplay = getComputedStyle(element).display;
-        }
+      } else if (targetAddress !== 'none') {
         element.style.display = 'none';
       }
-    });
-
-    // Also handle elements that should be shown to ANY connected wallet
-    const anyWalletElements = document.querySelectorAll('[data-show-to-wallet="any"]');
-    anyWalletElements.forEach(element => {
-      element.style.display = element.dataset.originalDisplay || 'block';
-      console.log('Showing element for any connected wallet:', element);
     });
   }
 
   hideAllWalletSpecificElements() {
-    // Hide all wallet-specific elements when no wallet is connected
     const walletElements = document.querySelectorAll('[data-show-to-wallet]');
     
     walletElements.forEach(element => {
-      // Store original display value if not already stored
-      if (!element.dataset.originalDisplay) {
-        element.dataset.originalDisplay = getComputedStyle(element).display;
+      if (element.dataset.showToWallet !== 'none') {
+        element.style.display = 'none';
+      } else {
+        element.style.display = element.dataset.originalDisplay || 'block';
       }
-      element.style.display = 'none';
-      console.log('Hiding wallet-specific element:', element);
     });
   }
 
-  // Public method to get current wallet address (useful for other controllers)
   getCurrentWalletAddress() {
     const wallets = this.onboard?.state.get().wallets || [];
     return wallets.length > 0 ? wallets[0].accounts[0].address : null;
